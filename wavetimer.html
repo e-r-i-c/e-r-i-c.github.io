@@ -1,0 +1,244 @@
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type='text/javascript'>
+'use strict';
+//var end=0;
+
+class TimerThingy {
+    constructor(heat) {
+        this.interval_id = "interval" + heat;
+        this.notify_id = "notify" + heat;
+        this.countdown_id = "countdown" + heat;
+        this.end = 0;
+        this.heat = heat;
+
+        this.starting_interval = 0;
+    }
+    
+    set countdown(val) {
+        var x = Number.parseInt(val);
+        var s = "" + x;
+        if (x < 10) {
+            s = "&nbsp;" + s;
+        }
+        if (this.interval <= this.starting_interval) {
+            s += "/" + this.interval;
+        }
+
+        document.getElementById(this.countdown_id).innerHTML = s;
+    }
+    get countdown() {
+        return document.getElementById(this.countdown_id).innerHTML;
+    }
+    
+    set interval(val) {
+        document.getElementById(this.interval_id).value = val;
+    }
+    get interval() {
+        return Number.parseInt(document.getElementById(this.interval_id).value);
+    }
+    
+    reset(start_time) {
+        this.starting_interval = Number.parseInt(document.getElementById('starting_interval').value);
+        this.end = start_time;
+        if (this.heat == 0) {
+            this.end += this.starting_interval * 1000-1;
+        } else {
+            this.end += Number.parseInt(document.getElementById('offset').value * this.heat) * 1000-1;
+        }
+        this.interval = this.starting_interval;
+        if (this.heat > 0) {
+            this.interval += Number.parseInt(document.getElementById('dec').value)
+        }
+    }
+
+    update() {
+        var now = Date.now();
+        var seconds_left = Math.floor((this.end - now)/1000);
+        var i = this.interval;
+        if (seconds_left < 0) {
+            if (i == 1) {
+                return;
+            }
+            i -= Number.parseInt(document.getElementById('dec').value);
+            this.interval = i;
+            this.end += i*1000;
+            seconds_left = Math.floor((this.end - now)/1000);
+        }
+
+        if ((seconds_left == (i-1)) && (this.interval <= this.starting_interval)) {
+            document.getElementById(this.notify_id).style.display = 'block';
+        } else {
+            document.getElementById(this.notify_id).style.display = 'none';
+        }
+
+        if (seconds_left >= 0) {
+            this.countdown = seconds_left+1;
+        }
+    }
+}
+
+var t0 = new TimerThingy(0);
+var t1 = new TimerThingy(1);
+var t2 = new TimerThingy(2);
+
+var t = null;
+
+function enable_check() {
+    t0.update()
+    t1.update()
+    t2.update()
+    t = setTimeout(enable_check, 200);
+}
+function disable_check() {
+    clearTimeout(t);
+    t = null;
+}
+
+var pauseStart = 0;
+var pauseEnd = 0;
+
+function togglepause() {
+    var now = Date.now();
+    var b = document.getElementById('pausebutton');
+    if ((b.value == 'pause') && (t != null)) {
+        // Pause
+        document.getElementById('pausebutton').value = 'un-pause';
+        disable_check();
+        pauseStart = now;
+    } else if (pauseStart != 0) {
+        // un-pause
+        document.getElementById('pausebutton').value = 'pause';
+        pauseEnd = now;
+        t0.end += (pauseEnd - pauseStart);
+        t1.end += (pauseEnd - pauseStart);
+        t2.end += (pauseEnd - pauseStart);
+        enable_check();
+        pauseStart = 0;
+    }
+}
+
+function togglego() {
+    var b = document.getElementById('gobutton');
+    if (b.value == 'go') {
+        // go
+        b.value = 'reset';
+        var now = Date.now();
+        
+        t0.reset(now);
+        t1.reset(now);
+        t2.reset(now);
+       
+        enable_check();
+    } else {
+        // reset
+        disable_check();
+        b.value = 'go';
+    }
+}
+
+function cond_show_element(id, disp, show) {
+    var e = document.getElementById(id);
+    if (show) {
+        e.style.display = disp;
+    } else {
+        e.style.display = 'none';
+    }
+}
+
+function changeheats() {
+    var b = document.getElementById('heats');
+    cond_show_element('heat2_row', 'table-row', (b.value > 1))
+    cond_show_element('offset', 'inline', (b.value > 1))
+    cond_show_element('offset_label', 'inline', (b.value > 1))
+    cond_show_element('heat3_row', 'table-row', (b.value > 2))
+}
+</script>
+
+<style>
+    body {
+        background: #000000;
+        color: #ffffff;
+        /*	font-size: 2em;*/
+    }
+    input, select {
+        color: #000000;
+        background: #ffffff;
+    }
+    input {
+        margin-top: 0.5em;
+    }
+    input[type="button"] {
+        font-size: 1em;
+    }
+    .countdown {
+        font-family: monospace;
+        text-align: right;
+    }
+    .big {
+        font-size: 2em;
+        font-weight: bold;
+    }
+    .notify {
+        color: #b400ff;
+        display: none;
+        margin-left: 1em;
+    }
+    #gobutton {
+        /*    font-size: 2em;*/
+    }
+    #interval {
+        /*    font-size: 2em;*/
+    }
+
+</style>
+
+</head>
+    <body>
+    <h2>Wave Timer!</h2>
+    <table border=0 width="100%">
+        <tr>
+            <td align=left>
+                <label for='interval'>Starting interval:</label>
+                <input type='number' id='starting_interval' value='30' min="1" max="99"></input>
+
+                <input type='hidden' id='interval0' value='30'></input>
+                <input type='hidden' id='interval1' value='30'></input>
+                <input type='hidden' id='interval2' value='30'></input>
+                <br/>
+                <label for='dec'>Adjust interval by: </label><input type='number' id='dec' value='1' min='0' max='99'></input>
+            
+            <td rowspan='2' align=center width="80">
+                <input type='button' id='gobutton' value='go' onclick='togglego()'></input><br/>
+                <input type='button' id='pausebutton' value='pause' onclick='togglepause()'></input>
+        <tr>
+            <td>
+                <select id='heats' onchange='changeheats()'>
+                    <option value='1'>1 heat</option>
+                    <option value='2'>2 heats</option>
+                    <option value='3'>3 heats</option>
+                </select>
+                <label id='offset_label' for='offset' style='display:none'>Heat offset:</label>
+                <input type='number' id='offset' value='5' min='1' max='99' style='display:none'></input>
+            
+    </table>
+    <hr>
+<table border=0>
+<tr>
+        <td>Heat 1: <span class='big'>&nbsp;</span>
+        <td><div id=countdown0 class='big countdown'></div>
+        <td><div id=notify0 class="notify big">GO 1</div>
+<tr id='heat2_row' style='display:none'>
+        <td>Heat 2: <span class='big'>&nbsp;</span>
+        <td><div id=countdown1 class='big countdown'></div>
+        <td><div id=notify1 class="notify big">GO 2</div>
+<tr id='heat3_row' style='display:none'>
+        <td>Heat 3: <span class='big'>&nbsp;</span>
+        <td><div id=countdown2 class='big countdown'></div>
+        <td><div id=notify2 class="notify big">GO 3</div>
+</table>
+
+</body>
+</html>
+
