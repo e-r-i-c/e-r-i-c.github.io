@@ -12,6 +12,7 @@ class TimerThingy {
         this.countdown_id = "countdown" + heat;
         this.end = 0;
         this.heat = heat;
+	this.warmup = false;
 
         this.starting_interval = 0;
     }
@@ -22,7 +23,8 @@ class TimerThingy {
         if (x < 10) {
             s = "&nbsp;" + s;
         }
-        if (this.interval <= this.starting_interval) {
+	//        if (this.interval <= this.starting_interval) {
+	if (!this.warmup) {
             s += "/" + this.interval;
         }
 
@@ -38,7 +40,13 @@ class TimerThingy {
     get interval() {
         return Number.parseInt(document.getElementById(this.interval_id).value);
     }
-    
+
+    get dec() {
+	var amt = Number.parseInt(document.getElementById('dec').value);
+	var sign = Number.parseInt(document.getElementById('incdec').value);
+	return amt * sign;
+    }
+			     
     reset(start_time) {
         this.starting_interval = Number.parseInt(document.getElementById('starting_interval').value);
         this.end = start_time;
@@ -49,7 +57,8 @@ class TimerThingy {
         }
         this.interval = this.starting_interval;
         if (this.heat > 0) {
-            this.interval += Number.parseInt(document.getElementById('dec').value)
+            this.interval += this.dec;
+	    this.warmup = true;
         }
     }
 
@@ -58,16 +67,17 @@ class TimerThingy {
         var seconds_left = Math.floor((this.end - now)/1000);
         var i = this.interval;
         if (seconds_left < 0) {
-            if (i == 1) {
+            if ((i <= 1) && !this.warmup) {
                 return;
             }
-            i -= Number.parseInt(document.getElementById('dec').value);
+            i -= this.dec;
             this.interval = i;
             this.end += i*1000;
+	    this.warmup = false;
             seconds_left = Math.floor((this.end - now)/1000);
         }
 
-        if ((seconds_left == (i-1)) && (this.interval <= this.starting_interval)) {
+        if ((seconds_left == (i-1)) && !this.warmup) {
             document.getElementById(this.notify_id).style.display = 'block';
         } else {
             document.getElementById(this.notify_id).style.display = 'none';
@@ -84,6 +94,7 @@ var t1 = new TimerThingy(1);
 var t2 = new TimerThingy(2);
 
 var t = null;
+
 
 function enable_check() {
     t0.update()
@@ -134,6 +145,8 @@ function togglego() {
     } else {
         // reset
         disable_check();
+        var now = Date.now();
+        
         b.value = 'go';
     }
 }
@@ -207,7 +220,11 @@ function changeheats() {
                 <input type='hidden' id='interval1' value='30'></input>
                 <input type='hidden' id='interval2' value='30'></input>
                 <br/>
-                <label for='dec'>Adjust interval by: </label><input type='number' id='dec' value='1' min='0' max='99'></input>
+		<select id='incdec'>
+		  <option value='1'>Decrease</option>
+		  <option value='-1'>Increase</option>
+		</select>
+		<label for='dec'>interval by: </label><input type='number' id='dec' value='1' min='0' max='99'></input>
             
             <td rowspan='2' align=center width="80">
                 <input type='button' id='gobutton' value='go' onclick='togglego()'></input><br/>
