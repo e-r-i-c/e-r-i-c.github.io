@@ -1,2 +1,2 @@
-# e-r-i-c.github.io
+# lindberg.house
 [Wave Timer](wavetimer.html)
