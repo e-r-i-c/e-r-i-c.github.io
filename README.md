@@ -1,2 +1,3 @@
 # lindberg.house
-[Wave Timer](wavetimer.html)
+
+[asdf](https://asdf.com)
